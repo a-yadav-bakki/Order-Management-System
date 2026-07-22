@@ -3,7 +3,7 @@
 > A portfolio case study by **Ayush Yadav** — Senior Business Analyst / Product Owner
 > Demonstrating the full path from an ambiguous operational problem to a working, testable product: discovery → requirements → API contract → prototype → test scenarios.
 
-**[▶ Live prototype](https://YOUR-USERNAME.github.io/order-management-system/)** · **[FRD](docs/FRD.md)** · **[User stories](docs/user-stories.md)** · **[Process flows](docs/process-flows.md)** · **[API contract](docs/api-contract.yaml)** · **[Test scenarios](docs/test-scenarios.md)**
+**[▶ Live prototype](https://a-yadav-bakki.github.io/order-management-system/)** · **[FRD](docs/FRD.md)** · **[User stories](docs/user-stories.md)** · **[Process flows](docs/process-flows.md)** · **[API contract](docs/api-contract.yaml)** · **[Test scenarios](docs/test-scenarios.md)**
 
 ---
 
@@ -41,7 +41,7 @@ This is a **human-in-the-loop** design: AI does the heavy lifting, the operator 
 - **Order console** — filter by status, search, and live KPIs (open orders, needs review, open value, delivered).
 
 ### Deliberate design decisions (the BA parts)
-- **Confidence threshold as a governance lever**, not a hidden constant — documented in the [FRD](docs/FRD.md) with rationale.
+- **Confidence threshold as a governance lever**, not a hidden constant — documented in the [FRD](FRD.md) with rationale.
 - **Orders created with unresolved fields become Exceptions, not silent records** — bad data is made *visible*, not blocked, because operators sometimes must proceed on partial info.
 - **Every status change is timestamped into a history** — auditability is a first-class requirement, not an afterthought.
 
