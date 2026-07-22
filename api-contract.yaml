@@ -1,0 +1,318 @@
+openapi: 3.0.3
+info:
+  title: Cargoflow OMS API
+  version: 2.0.0
+  description: >
+    Contract for the services behind the Cargoflow OMS console: AI extraction,
+    item master, orders (with item-wise value and value tracking), lifecycle
+    transitions, shipment tracking, and proof of delivery. Authored as a
+    portfolio artifact to demonstrate API contract design. Extraction and
+    tracking are simulated in the prototype but specified here as real services.
+servers:
+  - url: https://api.cargoflow.example/v2
+    description: Illustrative — not a live endpoint
+
+paths:
+  /extractions:
+    post:
+      summary: Extract structured order fields from raw text
+      description: >
+        Returns extracted fields with per-field confidence (0–1). Fields that
+        cannot be determined are returned empty with low confidence — the
+        service must not fabricate values.
+      operationId: extractOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rawText]
+              properties:
+                rawText: { type: string }
+                sourceType: { type: string, enum: [email, chat, pdf, manual] }
+      responses:
+        "200": { description: Extraction succeeded, content: { application/json: { schema: { $ref: "#/components/schemas/Extraction" } } } }
+        "422": { description: Input could not be processed, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /item-master:
+    get:
+      summary: List item master
+      operationId: listItems
+      parameters:
+        - name: q
+          in: query
+          description: Smart-search query over item names.
+          schema: { type: string }
+      responses:
+        "200": { description: Matching items, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/MasterItem" } } } } }
+    post:
+      summary: Add an item to the master
+      operationId: addItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterItem" }
+      responses:
+        "201": { description: Item created, content: { application/json: { schema: { $ref: "#/components/schemas/MasterItem" } } } }
+        "409": { description: Item already exists, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /item-master/{name}:
+    patch:
+      summary: Update an item's value per unit
+      operationId: updateItem
+      parameters: [ { name: name, in: path, required: true, schema: { type: string } } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { unitValue: { type: integer } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/MasterItem" } } } }
+    delete:
+      summary: Remove an item from the master
+      operationId: deleteItem
+      parameters: [ { name: name, in: path, required: true, schema: { type: string } } ]
+      responses:
+        "204": { description: Deleted }
+
+  /orders:
+    get:
+      summary: List orders
+      operationId: listOrders
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/Status" } }
+        - { name: q, in: query, description: Search id/customer/reference., schema: { type: string } }
+      responses:
+        "200": { description: Orders, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Order" } } } } }
+    post:
+      summary: Create an order
+      description: >
+        Item unit values are snapshotted onto the order at creation. If delivery
+        date or order value is missing, the order is created in `Exception`.
+        A non-empty customer and at least one item are required.
+      operationId: createOrder
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/OrderInput" } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Order" } } } }
+        "400": { description: Validation failed, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /orders/{orderId}/approval:
+    post:
+      summary: Apply partial approval (New → Confirmed / Not Available)
+      description: >
+        Per item, mark availability and available quantity. Available must not
+        exceed ordered. Unselected items are rejected. If no item is selected,
+        confirm=true moves the order to Not Available.
+      operationId: applyApproval
+      parameters: [ { name: orderId, in: path, required: true, schema: { type: string } } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lines:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      itemName: { type: string }
+                      available: { type: boolean }
+                      availableQty: { type: integer }
+                confirmNotAvailable: { type: boolean, description: Required true to close an all-rejected order. }
+      responses:
+        "200": { description: Applied, content: { application/json: { schema: { $ref: "#/components/schemas/Order" } } } }
+        "422": { description: "availableQty exceeds orderedQty", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /orders/{orderId}/transitions:
+    post:
+      summary: Transition an order's status
+      description: >
+        advance moves one stage along New→Confirmed→Picking→Shipped→Arrived→Delivered
+        (Arrived→Delivered requires POD, handled by /pod). flag_exception requires
+        remarks and preserves the prior stage; resolve_exception returns to it.
+      operationId: transitionOrder
+      parameters: [ { name: orderId, in: path, required: true, schema: { type: string } } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [advance, flag_exception, resolve_exception] }
+                remarks: { type: string, description: Required for flag_exception. }
+      responses:
+        "200": { description: Applied, content: { application/json: { schema: { $ref: "#/components/schemas/Order" } } } }
+        "409": { description: Invalid transition, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  /orders/{orderId}/tracking:
+    get:
+      summary: Get shipment tracking
+      description: Available once Shipped. Position reflects stage (in transit / at destination / delivered).
+      operationId: getTracking
+      parameters: [ { name: orderId, in: path, required: true, schema: { type: string } } ]
+      responses:
+        "200": { description: Tracking, content: { application/json: { schema: { $ref: "#/components/schemas/Tracking" } } } }
+
+  /orders/{orderId}/pod:
+    put:
+      summary: Record or correct proof of delivery
+      description: >
+        Allowed once Arrived. Requires a document and per-item received quantities;
+        received must not exceed available, and rejected/short items require remarks.
+        On success the order becomes Delivered. Re-issuing corrects an existing POD
+        and logs a "POD corrected" history event.
+      operationId: recordPod
+      parameters: [ { name: orderId, in: path, required: true, schema: { type: string } } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PodInput" }
+      responses:
+        "200": { description: Recorded, content: { application/json: { schema: { $ref: "#/components/schemas/Order" } } } }
+        "409": { description: Not in a state that allows POD, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: "receivedQty exceeds availableQty or missing remarks", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+components:
+  schemas:
+    Status:
+      type: string
+      enum: [New, Confirmed, Picking, Shipped, Arrived, Delivered, Exception, Not Available]
+
+    ConfidenceField:
+      type: object
+      properties:
+        value: { nullable: true }
+        confidence: { type: number, format: float, minimum: 0, maximum: 1 }
+        needsReview: { type: boolean }
+
+    Extraction:
+      type: object
+      properties:
+        threshold: { type: number, example: 0.80 }
+        fields:
+          type: object
+          properties:
+            customer: { $ref: "#/components/schemas/ConfidenceField" }
+            reference: { $ref: "#/components/schemas/ConfidenceField" }
+            address: { $ref: "#/components/schemas/ConfidenceField" }
+            deliveryDate: { $ref: "#/components/schemas/ConfidenceField" }
+            items:
+              allOf:
+                - $ref: "#/components/schemas/ConfidenceField"
+                - type: object
+                  properties:
+                    value: { type: array, items: { $ref: "#/components/schemas/LineItemInput" } }
+
+    MasterItem:
+      type: object
+      required: [name, unitValue]
+      properties:
+        name: { type: string, example: "Container twist lock" }
+        unitValue: { type: integer, description: Value per unit (INR)., example: 3800 }
+
+    LineItemInput:
+      type: object
+      properties:
+        name: { type: string }
+        qty: { type: integer }
+        unitValue: { type: integer, description: Snapshotted from the item master at creation. }
+
+    OrderItem:
+      type: object
+      properties:
+        name: { type: string }
+        unitValue: { type: integer }
+        orderedQty: { type: integer }
+        availableQty: { type: integer, description: After partial approval. }
+        receivedQty: { type: integer, nullable: true, description: After POD. }
+        rejected: { type: boolean, description: Rejected at approval or delivery. }
+
+    OrderInput:
+      type: object
+      required: [customer, items]
+      properties:
+        customer: { type: string }
+        reference: { type: string }
+        address: { type: string }
+        deliveryDate: { type: string, format: date }
+        items: { type: array, items: { $ref: "#/components/schemas/LineItemInput" } }
+
+    Order:
+      type: object
+      properties:
+        id: { type: string, example: "ORD-1044" }
+        customer: { type: string }
+        reference: { type: string }
+        address: { type: string }
+        deliveryDate: { type: string, format: date, nullable: true }
+        status: { $ref: "#/components/schemas/Status" }
+        priorStatus: { type: string, nullable: true, description: Stage an Exception was flagged from. }
+        flagged: { type: boolean }
+        items: { type: array, items: { $ref: "#/components/schemas/OrderItem" } }
+        value:
+          type: object
+          description: Value tracked across the fulfilment path.
+          properties:
+            ordered: { type: integer }
+            available: { type: integer }
+            delivered: { type: integer, nullable: true }
+        tracking: { allOf: [ { $ref: "#/components/schemas/Tracking" } ], nullable: true }
+        pod: { allOf: [ { $ref: "#/components/schemas/Pod" } ], nullable: true }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              stage: { type: string, description: "Includes Edited (order/POD corrections)." }
+              timestamp: { type: string, format: date-time }
+              note: { type: string }
+
+    Tracking:
+      type: object
+      properties:
+        carrier: { type: string, example: "Delhivery" }
+        trackingNo: { type: string, example: "CF552104" }
+        origin: { type: array, items: { type: number }, description: "[lat, lng]" }
+        destination: { type: array, items: { type: number } }
+        progress: { type: number, format: float, description: "0..1; 1 at/after arrival." }
+        state: { type: string, enum: [in_transit, at_destination, delivered] }
+
+    PodInput:
+      type: object
+      required: [document, receivedLines]
+      properties:
+        document: { type: string, description: File reference/upload token. }
+        receivedBy: { type: string }
+        deliveredAt: { type: string, format: date-time }
+        remarks: { type: string, description: Required if any line is rejected or short. }
+        receivedLines:
+          type: array
+          items:
+            type: object
+            properties:
+              itemName: { type: string }
+              received: { type: boolean }
+              receivedQty: { type: integer }
+
+    Pod:
+      type: object
+      properties:
+        fileName: { type: string }
+        receivedBy: { type: string }
+        deliveredAt: { type: string, format: date-time }
+        remarks: { type: string }
+
+    Error:
+      type: object
+      properties:
+        code: { type: string, example: "AVAILABLE_EXCEEDS_ORDERED" }
+        message: { type: string, example: "Available Qty cannot be more than Ordered Qty." }
