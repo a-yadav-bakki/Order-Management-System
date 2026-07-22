@@ -3,7 +3,7 @@
 > A portfolio case study by **Ayush Yadav** — Senior Business Analyst / Product Owner
 > Demonstrating the full path from an ambiguous operational problem to a working, testable product: discovery → requirements → API contract → prototype → test scenarios.
 
-**[▶ Live prototype](index.html)** · **[FRD](docs/FRD.md)** · **[User stories](docs/user-stories.md)** · **[Process flows](docs/process-flows.md)** · **[API contract](docs/api-contract.yaml)** · **[Test scenarios](docs/test-scenarios.md)**
+**[▶ Live prototype]((https://a-yadav-bakki.github.io/order-management-system/))** · **[FRD](docs/FRD.md)** · **[User stories](docs/user-stories.md)** · **[Process flows](docs/process-flows.md)** · **[API contract](docs/api-contract.yaml)** · **[Test scenarios](docs/test-scenarios.md)**
 
 ---
 
