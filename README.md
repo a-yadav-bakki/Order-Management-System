@@ -3,7 +3,7 @@
 > A portfolio case study by **Ayush Yadav** — Senior Business Analyst / Product Owner
 > Demonstrating the full path from an ambiguous operational problem to a working, testable product: discovery → requirements → API contract → prototype → test scenarios.
 
-**[▶ Live prototype](https://a-yadav-bakki.github.io/order-management-system/index.html)** · **[FRD](FRD.md)** · **[User stories](user-stories.md)** · **[Process flows](process-flows.md)** · **[API contract](api-contract.yaml)** · **[Test scenarios](test-scenarios.md)**
+**[▶ Live prototype](https://a-yadav-bakki.github.io/Order-Management-System/)** · **[FRD](FRD.md)** · **[User stories](user-stories.md)** · **[Process flows](process-flows.md)** · **[API contract](api-contract.yaml)** · **[Test scenarios](test-scenarios.md)**
 
 ---
 
@@ -49,7 +49,7 @@ This is a **human-in-the-loop** design: AI does the heavy lifting, the operator 
 
 ## How the "AI" works here
 
-The extractor is a **deterministic on-device heuristic parser** (no API key, nothing leaves the browser) that simulates an LLM/OCR extraction service. That keeps the repo free to clone and run, while the *product logic being demonstrated* — confidence scoring, thresholds, review routing, exception creation — is exactly what a production extraction pipeline would need. The [API contract](docs/api-contract.yaml) specifies the real service this would call.
+The extractor is a **deterministic on-device heuristic parser** (no API key, nothing leaves the browser) that simulates an LLM/OCR extraction service. That keeps the repo free to clone and run, while the *product logic being demonstrated* — confidence scoring, thresholds, review routing, exception creation — is exactly what a production extraction pipeline would need. The [API contract](api-contract.yaml) specifies the real service this would call.
 
 ## Run it
 
@@ -72,8 +72,8 @@ Just open `index.html` in a browser — no build step, no dependencies. To host:
 ## What this demonstrates about how I work
 
 1. **I start from the operational reality**, not the feature list — the design comes from how orders actually arrive.
-2. **I make requirements testable** — every story has Gherkin criteria that map to the [test scenarios](docs/test-scenarios.md).
-3. **I can speak the technical layer** — the [OpenAPI contract](docs/api-contract.yaml) defines payloads, confidence fields, and error handling engineers can build against.
+2. **I make requirements testable** — every story has Gherkin criteria that map to the [test scenarios](test-scenarios.md).
+3. **I can speak the technical layer** — the [OpenAPI contract](api-contract.yaml) defines payloads, confidence fields, and error handling engineers can build against.
 4. **I design for edge cases up front** — missing values, ambiguous customers, and partial orders are handled by design, not patched later.
 
 ---
