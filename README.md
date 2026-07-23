@@ -28,6 +28,32 @@ The problem is drawn from real logistics operations: **orders arrive as unstruct
 
 This is a **human-in-the-loop** design: AI does the heavy lifting, the operator owns the judgment. The confidence threshold is the product's core control — set it high and you review more but ship fewer errors; set it low and you move faster but risk bad data reaching dispatch.
 
+## Business impact
+
+### Proven in production
+The design decisions in this prototype come from a live AI/OCR programme I led end to end on a B2B SaaS platform:
+
+| Outcome | Result |
+|---|---|
+| Platform adoption after AI-assisted intake replaced manual form entry | **23% → 87% in 2 months** |
+| AI processing cost, after extracting document text before prompting | **~50% reduction** |
+| Fields requiring manual entry per request | **8+ → 2** |
+
+### What this prototype is designed to move
+Target metrics and the mechanism behind each — these are the KPIs I'd instrument on release, not measured results.
+
+| Metric | Mechanism |
+|---|---|
+| **Order creation time** | AI extraction pre-fills the order from pasted text; the operator confirms rather than types |
+| **Transcription errors reaching dispatch** | Per-field confidence thresholds route only uncertain fields to human review, instead of trusting or re-checking everything |
+| **Pricing errors & value disputes** | Order value is calculated from the item master (unit × qty) and snapshotted at creation, removing hand-typed totals |
+| **Value leakage** | Ordered → Available → Delivered tracking means the invoiced figure always reflects what was actually approved and received |
+| **Fulfilment disputes** | Rejections are captured at two points — approval and delivery — each with mandatory remarks, creating a defensible discrepancy trail |
+| **"Where is my order?" queries** | Live shipment tracking gives customers and internal teams status without contacting the desk |
+| **False delivery confirmations** | POD is gated behind the Arrived state, so delivery cannot be recorded before the shipment physically arrives |
+
+> Instrumenting these before launch is deliberate: a reporting-free rollout can't tell you whether the friction you removed actually changed behaviour.
+
 ## Who it's for
 
 | Persona | Goal | Pain today |
