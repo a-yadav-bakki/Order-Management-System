@@ -5,6 +5,15 @@
 
 **[▶ Live prototype](https://a-yadav-bakki.github.io/Order-Management-System/)** · **[FRD](FRD.md)** · **[User stories](user-stories.md)** · **[Process flows](process-flows.md)** · **[API contract](api-contract.yaml)** · **[Test scenarios](test-scenarios.md)**
 
+![Order console](screenshots/console.png)
+*The order console — KPIs, filters, and item-wise order values.*
+
+![AI-assisted intake](screenshots/add-order.png)
+*Add order: paste text to auto-fill the form, with low-confidence fields flagged for review.*
+
+![Shipment tracking](screenshots/tracking.png)
+*Live shipment tracking on the order detail page.*
+
 ---
 
 ## Why this exists
